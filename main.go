@@ -49,14 +49,24 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+
+		}
+	}(conn)
+
+	clientAddr := conn.RemoteAddr().String()
+	fmt.Printf("Клиент подключен: %s\n", clientAddr)
 
 	buffer := make([]byte, 1024)
 	length, err := conn.Read(buffer)
 	if err != nil {
-		fmt.Printf("Ошибка при чтении данных: %v\n", err)
+		fmt.Printf("Ошибка при чтении данных от %s: %v\n", clientAddr, err)
 		return
 	}
+
+	fmt.Printf("Сырые данные запроса от %s: %s\n", clientAddr, buffer[:length])
 
 	rawData := buffer[:length]
 	startIndex := strings.Index(string(rawData), "{")
@@ -82,12 +92,12 @@ func handleConnection(conn net.Conn) {
 
 	responseData, err := json.Marshal(response)
 	if err != nil {
-		fmt.Printf("Ошибка при формировании ответа: %v\n", err)
+		fmt.Printf("Ошибка при формировании ответа для %s: %v\n", clientAddr, err)
 		return
 	}
 
 	_, err = conn.Write(responseData)
 	if err != nil {
-		fmt.Printf("Ошибка при отправке ответа: %v\n", err)
+		fmt.Printf("Ошибка при отправке ответа клиенту %s: %v\n", clientAddr, err)
 	}
 }
